@@ -23,7 +23,7 @@ if env_file.exists():
 SECRET_KEY = env('DJANGO_SECRET_KEY', default='django-insecure-dev-key-change-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env('DEBUG', default=False)
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
 # Single-tenant: teacher sees all users/groups/payments (no org filter). Set False for multi-tenant.
 SINGLE_TENANT = env.bool('SINGLE_TENANT', default=True)
