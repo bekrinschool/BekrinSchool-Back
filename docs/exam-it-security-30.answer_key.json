@@ -1,0 +1,991 @@
+{
+  "type": "exam",
+  "title": "İT və şəbəkə təhlükəsizliyi (tam imtahan, 30 sual)",
+  "subject": "İT və şəbəkə təhlükəsizliyi",
+  "_documentation": {
+    "student_page": "bekrin-front/app/(student)/student/exams/page.tsx",
+    "canonical_keys": "number, kind, prompt, text, options[{key,text}], correct, open_answer, open_rule",
+    "aliases_not_preserved_on_normalize": "content, correct_answer (istifadə etməyin — normalize silir)",
+    "platform_exam_counts": "22 mc + 5 open + 3 situation",
+    "user_requested_alternate_counts": "Platforma qaydası: type=exam üçün 22 qapalı + 5 açıq + 3 situasiya. İstənilən 20/6/4 payı üçün type=quiz istifadə edin və ya backend limitini dəyişin.",
+    "pdf_variants_AB": "answer_key_json-da A/B variant dəstəyi yoxdur — iki ayrı imtahan və ya iki PDF faylı lazımdır.",
+    "cavab_vereqi_api": "ExamSerializer.answer_key_preview: [{number, kind, correct, open_answer}]"
+  },
+  "stable_question_ids": {
+    "1": "q_30_01",
+    "2": "q_30_02",
+    "3": "q_30_03",
+    "4": "q_30_04",
+    "5": "q_30_05",
+    "6": "q_30_06",
+    "7": "q_30_07",
+    "8": "q_30_08",
+    "9": "q_30_09",
+    "10": "q_30_10",
+    "11": "q_30_11",
+    "12": "q_30_12",
+    "13": "q_30_13",
+    "14": "q_30_14",
+    "15": "q_30_15",
+    "16": "q_30_16",
+    "17": "q_30_17",
+    "18": "q_30_18",
+    "19": "q_30_19",
+    "20": "q_30_20",
+    "21": "q_30_21",
+    "22": "q_30_22",
+    "23": "q_30_23",
+    "24": "q_30_24",
+    "25": "q_30_25",
+    "26": "q_30_26",
+    "27": "q_30_27",
+    "28": "q_30_28",
+    "29": "q_30_29",
+    "30": "q_30_30"
+  },
+  "answer_key": {
+    "format_version": 1,
+    "description": "OMR və çap üçün xülasə; qiymətləndirmə answer_key_json.questions ilə sinxron saxlanılmalıdır.",
+    "by_number": {
+      "1": {
+        "id": "q_30_01",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "2": {
+        "id": "q_30_02",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "3": {
+        "id": "q_30_03",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "4": {
+        "id": "q_30_04",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "5": {
+        "id": "q_30_05",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "6": {
+        "id": "q_30_06",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "7": {
+        "id": "q_30_07",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "8": {
+        "id": "q_30_08",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "9": {
+        "id": "q_30_09",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "10": {
+        "id": "q_30_10",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "11": {
+        "id": "q_30_11",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "12": {
+        "id": "q_30_12",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "13": {
+        "id": "q_30_13",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "14": {
+        "id": "q_30_14",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "15": {
+        "id": "q_30_15",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "16": {
+        "id": "q_30_16",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "17": {
+        "id": "q_30_17",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "18": {
+        "id": "q_30_18",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "19": {
+        "id": "q_30_19",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "20": {
+        "id": "q_30_20",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "21": {
+        "id": "q_30_21",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "22": {
+        "id": "q_30_22",
+        "kind": "mc",
+        "correct_key": "A"
+      },
+      "23": {
+        "id": "q_30_23",
+        "kind": "open",
+        "open_rule": "EXACT_MATCH",
+        "correct": "məxfilik, bütövlük, əlçatanlıq"
+      },
+      "24": {
+        "id": "q_30_24",
+        "kind": "open",
+        "open_rule": "EXACT_MATCH",
+        "correct": "cihaz və ya brauzer kompromet olduqda parolların oğurlanması riski"
+      },
+      "25": {
+        "id": "q_30_25",
+        "kind": "open",
+        "open_rule": "UNORDERED_MATCH",
+        "correct": "SIEM, IDS, WAF"
+      },
+      "26": {
+        "id": "q_30_26",
+        "kind": "open",
+        "open_rule": "UNORDERED_MATCH",
+        "correct": "Linux, Windows, macOS"
+      },
+      "27": {
+        "id": "q_30_27",
+        "kind": "open",
+        "open_rule": "MATCHING",
+        "correct": "1-c2-b3-d4-a"
+      },
+      "28": {
+        "id": "q_30_28",
+        "kind": "situation",
+        "correct": null,
+        "note": "Əl ilə qiymətləndirmə + canvas"
+      },
+      "29": {
+        "id": "q_30_29",
+        "kind": "situation",
+        "correct": null,
+        "note": "Əl ilə qiymətləndirmə + canvas"
+      },
+      "30": {
+        "id": "q_30_30",
+        "kind": "situation",
+        "correct": null,
+        "note": "Əl ilə qiymətləndirmə + canvas"
+      }
+    },
+    "mc_omr_keys": [
+      "1:A",
+      "2:A",
+      "3:A",
+      "4:A",
+      "5:A",
+      "6:A",
+      "7:A",
+      "8:A",
+      "9:A",
+      "10:A",
+      "11:A",
+      "12:A",
+      "13:A",
+      "14:A",
+      "15:A",
+      "16:A",
+      "17:A",
+      "18:A",
+      "19:A",
+      "20:A",
+      "21:A",
+      "22:A"
+    ]
+  },
+  "questions": [
+    {
+      "number": 1,
+      "kind": "mc",
+      "prompt": "Firewall əsasən nə üçün istifadə olunur?",
+      "text": "Firewall əsasən nə üçün istifadə olunur?",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "Daxili şəbəkəni xarici təhdidlərdən filtrləmək",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "Yalnız e-poçt göndərmək",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "Verilənlər bazası nüsxələmək",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "DNS server qurmaq",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 2,
+      "kind": "mc",
+      "prompt": "Phishing hücumunda hücumçu əsasən nəyə can atır?",
+      "text": "Phishing hücumunda hücumçu əsasən nəyə can atır?",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "İstifadəçini saxta səhifəyə yönləndirmək",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "Fiziki server oğurluğu",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "Printer kağızını dəyişmək",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "Monitor parlaqlığını artırmaq",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 3,
+      "kind": "mc",
+      "prompt": "Güclü parol üçün hansı tövsiyə daha düzgündür?",
+      "text": "Güclü parol üçün hansı tövsiyə daha düzgündür?",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "Uzunluq və müxtəlif simvollar",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "Ad və doğum tarixi",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "Yalnız rəqəmlər",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "Bütün hesablarda eyni parol",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 4,
+      "kind": "mc",
+      "prompt": "VPN əsas funksiyası hansıdır?",
+      "text": "VPN əsas funksiyası hansıdır?",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "Şifrəli tunel ilə trafikin qorunması",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "Virus skaneri",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "E-poçt spam filtri",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "SSD sürətini artırmaq",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 5,
+      "kind": "mc",
+      "prompt": "Malware terminində trojan xüsusiyyəti:",
+      "text": "Malware terminində trojan xüsusiyyəti:",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "Zərərli kodu legit proqram kimi maskalamaq",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "Yalnız şəbəkə kabelini kəsmək",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "Monitoru söndürmək",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "Klaviatura dili dəyişmək",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 6,
+      "kind": "mc",
+      "description": "2FA (iki faktorlu autentifikasiya) nə əlavə edir?",
+      "text": "2FA (iki faktorlu autentifikasiya) nə əlavə edir?",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "İkinci sübut faktoru (məs. OTP)",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "İkinci e-poçt ünvanı",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "İki monitor",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "İki CPU",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 7,
+      "kind": "mc",
+      "prompt": "SQL injection hansı təbəqədə risk yaradır?",
+      "text": "SQL injection hansı təbəqədə risk yaradır?",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "Tətbiq/verilənlər bazası interfeysi",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "Fiziki server otağı",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "Printer drayveri",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "USB siçan",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 8,
+      "kind": "mc",
+      "prompt": "HTTPS ilə HTTP arasındakı əsas fərq:",
+      "text": "HTTPS ilə HTTP arasındakı əsas fərq:",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "TLS ilə kanal şifrələməsi",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "Rəng fərqi",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "Fayl ölçüsü",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "Yalnız mobil şəbəkə",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 9,
+      "kind": "mc",
+      "prompt": "Zero-day zəifliyi nədir?",
+      "text": "Zero-day zəifliyi nədir?",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "Hələ rəsmi yamaq olmayan məlum boşluq",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "Köhnə əməliyyat sistemi",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "Boş disk sahəsi",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "İstifadəçi adının unudulması",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 10,
+      "kind": "mc",
+      "prompt": "Ransomware tipik hədəfi:",
+      "text": "Ransomware tipik hədəfi:",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "Faylları şifrələyib fidye tələb etmək",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "Wi-Fi adını dəyişmək",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "Brauzer tarixçəsini silmək",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "Ekran qətnaməsini artırmaq",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 11,
+      "kind": "mc",
+      "prompt": "DDoS hücumu nə edir?",
+      "text": "DDoS hücumu nə edir?",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "Xidməti resurs tükətmə ilə əlçatmaz etmək",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "Parolu sıfırlamaq",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "Antivirus yeniləmək",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "DNS cache təmizləmək",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 12,
+      "kind": "mc",
+      "prompt": "SOC (Security Operations Center) rolu:",
+      "text": "SOC (Security Operations Center) rolu:",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "Təhlükəsizlik hadisələrini monitorinq və cavab",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "Satış hesabatı",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "Maaş hesablanması",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "Dizayn şablonları",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 13,
+      "kind": "mc",
+      "prompt": "Least privilege prinsipi:",
+      "text": "Least privilege prinsipi:",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "Minimum lazım icazə vermək",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "Hər kəsə admin hüququ",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "Parolsuz giriş",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "Bütün portları açmaq",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 14,
+      "kind": "mc",
+      "prompt": "SIEM aləti əsasən nə toplayır?",
+      "text": "SIEM aləti əsasən nə toplayır?",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "Log və təhlükəsizlik hadisələrini korrelyasiya",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "Yalnız foto",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "Musiqini sıxışdırmaq",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "Printer sırası",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 15,
+      "kind": "mc",
+      "prompt": "XSS (Cross-Site Scripting) əsas riski:",
+      "text": "XSS (Cross-Site Scripting) əsas riski:",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "Brauzerdə zərərli skript icra mühiti",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "Printer kağızı",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "Kabel uzunluğu",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "CPU soyutması",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 16,
+      "kind": "mc",
+      "prompt": "CSRF hücumunda istifadə olunan mexanizm:",
+      "text": "CSRF hücumunda istifadə olunan mexanizm:",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "Səlahiyyətli sessiyadan istifadə edən saxta sorğu",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "USB formatlama",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "Monitor kalibrləmə",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "SSD TRIM",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 17,
+      "kind": "mc",
+      "prompt": "Patch idarəetməsinin məqsədi:",
+      "text": "Patch idarəetməsinin məqsədi:",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "Zəiflikləri bağlayan yeniləmələri tətbiq etmək",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "İşçi cədvəli",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "Logo dizaynı",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "Domain almaq",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 18,
+      "kind": "mc",
+      "prompt": "Public key kriptoqrafiyasında açar cütlüyü:",
+      "text": "Public key kriptoqrafiyasında açar cütlüyü:",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "Açıq və gizli açar",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "İki eyni parol",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "İki monitor",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "İki router",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 19,
+      "kind": "mc",
+      "prompt": "Hash funksiyasının xüsusiyyəti (parol saxlama kontekstində):",
+      "text": "Hash funksiyasının xüsusiyyəti (parol saxlama kontekstində):",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "Təkrarsızlıq və tərsinməzlik gözləntisi",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "Geri çevrilən sıxışdırma",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "Yalnız şəkil üçün",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "DNS əvəzləmə",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 20,
+      "kind": "mc",
+      "prompt": "Insider threat nədir?",
+      "text": "Insider threat nədir?",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "Təşkilat daxilindən təhdid",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "Yalnız xarici hacker",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "İnternet provayder",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "Buludun qiyməti",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 21,
+      "kind": "mc",
+      "prompt": "Incident response planında ilk addım adətən:",
+      "text": "Incident response planında ilk addım adətən:",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "Aşkarlama və təsnifat",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "Marketinq kampaniyası",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "Ofis təmiri",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "Domain satışı",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 22,
+      "kind": "mc",
+      "prompt": "Ən yaxşı təcrübə: parol sızıntısı aşkarlananda ilk addım hansıdır?",
+      "text": "Ən yaxşı təcrübə: parol sızıntısı aşkarlananda ilk addım hansıdır?",
+      "image_url": null,
+      "options": [
+        {
+          "key": "A",
+          "text": "Hesabları sıfırlamaq/yeniləmək və təsir analizi",
+          "image_url": null
+        },
+        {
+          "key": "B",
+          "text": "Yalnız monitoru söndürmək",
+          "image_url": null
+        },
+        {
+          "key": "C",
+          "text": "DNS serveri silmək",
+          "image_url": null
+        },
+        {
+          "key": "D",
+          "text": "Bütün e-poçtları silmək",
+          "image_url": null
+        },
+        {
+          "key": "E",
+          "text": "Heç nə etməmək",
+          "image_url": null
+        }
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 23,
+      "kind": "open",
+      "open_rule": "EXACT_MATCH",
+      "prompt": "SOC analitiki üçün \"CIA triadası\"nın üç sütununu vergüllə ayıraraq yazın.",
+      "text": "SOC analitiki üçün \"CIA triadası\"nın üç sütununu vergüllə ayıraraq yazın.",
+      "image_url": null,
+      "options": [],
+      "open_answer": "məxfilik, bütövlük, əlçatanlıq"
+    },
+    {
+      "number": 24,
+      "kind": "open",
+      "open_rule": "EXACT_MATCH",
+      "prompt": "Brauzerdə saxlanan parolların əsas riskini (bir cümlə) qeyd edin.",
+      "text": "Brauzerdə saxlanan parolların əsas riskini (bir cümlə) qeyd edin.",
+      "image_url": null,
+      "options": [],
+      "open_answer": "cihaz və ya brauzer kompromet olduqda parolların oğurlanması riski"
+    },
+    {
+      "number": 25,
+      "kind": "open",
+      "open_rule": "UNORDERED_MATCH",
+      "prompt": "Aşağıdakı üç təhlükəsizlik alətini vergüllə ayırın (sıra önəmli deyil): SIEM, IDS, WAF",
+      "text": "Aşağıdakı üç təhlükəsizlik alətini vergüllə ayırın (sıra önəmli deyil): SIEM, IDS, WAF",
+      "image_url": null,
+      "options": [],
+      "open_answer": "SIEM, IDS, WAF"
+    },
+    {
+      "number": 26,
+      "kind": "open",
+      "open_rule": "UNORDERED_MATCH",
+      "prompt": "Üç əməliyyat sistemini yazın (vergüllə, sıra önəmli deyil): Linux, Windows, macOS",
+      "text": "Üç əməliyyat sistemini yazın (vergüllə, sıra önəmli deyil): Linux, Windows, macOS",
+      "image_url": null,
+      "options": [],
+      "open_answer": "Linux, Windows, macOS"
+    },
+    {
+      "number": 27,
+      "kind": "open",
+      "open_rule": "MATCHING",
+      "prompt": "Sütun 1-dəki rəqəmləri sütun 2-dəki hərflərlə uyğunlaşdırın. Cavabınızı 1-a, 2-b, 3-c, 4-d formatında yazın (boşluqsuz da qəbul olunur).\n1) Firewall  2) VPN  3) IDS  4) SIEM\na) Monitorinq və korrelyasiya  b) Şəbəkə trafikinin şifrələnməsi  c) Siyasətə əsaslanan filtrasiya  d) Şəbəkə hücumlarının aşkarlanması",
+      "text": "Uyğunluq: 1=Firewall, 2=VPN, 3=IDS, 4=SIEM — a,b,c,d ilə.",
+      "image_url": null,
+      "options": [],
+      "matching_left": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "matching_right": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+      ],
+      "open_answer": "1-c2-b3-d4-a"
+    },
+    {
+      "number": 28,
+      "kind": "situation",
+      "prompt": "Situasiya 1 — Şəbəkə insidenti\n(1) Müştəri şikayət edir: ofis Wi-Fi parolu divarda yazılıb. Hansı iki tədbiri dərhal təklif edirsiniz?\n(2) Bu riski \"insider\" və ya \"fiziki təhlükəsizlik\" çərçivəsində qısa təsnif edin.\n(3) Qaralama ilə sadə şəbəkə sxemi (router, AP, istifadəçi) çəkin.",
+      "text": "Situasiya 1 — Şəbəkə insidenti\n(1) Müştəri şikayət edir: ofis Wi-Fi parolu divarda yazılıb. Hansı iki tədbiri dərhal təklif edirsiniz?\n(2) Bu riski \"insider\" və ya \"fiziki təhlükəsizlik\" çərçivəsində qısa təsnif edin.\n(3) Qaralama ilə sadə şəbəkə sxemi (router, AP, istifadəçi) çəkin.",
+      "image_url": null,
+      "options": [],
+      "max_multiplier": 1
+    },
+    {
+      "number": 29,
+      "kind": "situation",
+      "prompt": "Situasiya 2 — E-poçt təhdidi\n(A) CEO-dan tələsik köçürmə tələb edən e-poçt gəlib. İlk yoxlama addımlarını yazın.\n(B) İşçiyə bir cümləlik təlim məsləhəti verin.\n(C) Qaralama ilə \"report phishing\" axını üçün qutu diaqramı çəkin.",
+      "text": "Situasiya 2 — E-poçt təhdidi\n(A) CEO-dan tələsik köçürmə tələb edən e-poçt gəlib. İlk yoxlama addımlarını yazın.\n(B) İşçiyə bir cümləlik təlim məsləhəti verin.\n(C) Qaralama ilə \"report phishing\" axını üçün qutu diaqramı çəkin.",
+      "image_url": null,
+      "options": [],
+      "max_multiplier": 1
+    },
+    {
+      "number": 30,
+      "kind": "situation",
+      "prompt": "Situasiya 3 — Bulud konfiqurasiyası\n1) S3 bucket ictimai oxuma açıqdır — riski izah edin.\n2) Minimum düzəliş (policy/ACL) tövsiyəniz.\n3) Qaralama ilə \"public / private\" bucket fərqini şəkil çəkin.",
+      "text": "Situasiya 3 — Bulud konfiqurasiyası\n1) S3 bucket ictimai oxuma açıqdır — riski izah edin.\n2) Minimum düzəliş (policy/ACL) tövsiyəniz.\n3) Qaralama ilə \"public / private\" bucket fərqini şəkil çəkin.",
+      "image_url": null,
+      "options": [],
+      "max_multiplier": 1
+    }
+  ]
+}

@@ -1,0 +1,196 @@
+{
+  "type": "quiz",
+  "title": "Python və Data Science — fundamental (15 sual)",
+  "questions": [
+    {
+      "number": 1,
+      "kind": "mc",
+      "description": "Python-da siyahıya (list) yeni element əlavə etmək üçün hansı metoddan istifadə olunur?",
+      "text": "Python-da siyahıya (list) yeni element əlavə etmək üçün hansı metoddan istifadə olunur?",
+      "image_url": null,
+      "options": [
+        {"key": "A", "text": "add()", "image_url": null},
+        {"key": "B", "text": "append()", "image_url": null},
+        {"key": "C", "text": "push()", "image_url": null},
+        {"key": "D", "text": "insert_back()", "image_url": null}
+      ],
+      "correct": "B"
+    },
+    {
+      "number": 2,
+      "kind": "mc",
+      "prompt": "NumPy massivində elementlərin eyni tipdə saxlanması əsasən nəyə xidmət edir?",
+      "text": "NumPy massivində elementlərin eyni tipdə saxlanması əsasən nəyə xidmət edir?",
+      "image_url": null,
+      "options": [
+        {"key": "A", "text": "Yaddaş səmərəliliyi və sürətli vektor əməliyyatları", "image_url": null},
+        {"key": "B", "text": "Yalnız mətn tipli məlumat dəstəyi", "image_url": null},
+        {"key": "C", "text": "Avtomatik GUI yaradılması", "image_url": null},
+        {"key": "D", "text": "SQL sorğularının icrası", "image_url": null}
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 3,
+      "kind": "mc",
+      "prompt": "pandas-da məlumat çərçivəsinin (DataFrame) sətirlərini filtrləmək üçün hansı sintaksis ən tipikdir?",
+      "text": "pandas-da məlumat çərçivəsinin (DataFrame) sətirlərini filtrləmək üçün hansı sintaksis ən tipikdir?",
+      "image_url": null,
+      "options": [
+        {"key": "A", "text": "df.filter_rows(...)", "image_url": null},
+        {"key": "B", "text": "df[df['sütun'] > dəyər]", "image_url": null},
+        {"key": "C", "text": "df.select * where", "image_url": null},
+        {"key": "D", "text": "df.slice()", "image_url": null}
+      ],
+      "correct": "B"
+    },
+    {
+      "number": 4,
+      "kind": "mc",
+      "prompt": "Nəzarətli öyrənmədə (supervised learning) hədəf dəyişən (label) mövcuddursa, bu hansı məsələ ailəsinə daxildir?",
+      "text": "Nəzarətli öyrənmədə (supervised learning) hədəf dəyişən (label) mövcuddursa, bu hansı məsələ ailəsinə daxildir?",
+      "image_url": null,
+      "options": [
+        {"key": "A", "text": "Yalnız klasterləşmə", "image_url": null},
+        {"key": "B", "text": "Təsnifat və ya reqressiya", "image_url": null},
+        {"key": "C", "text": "Yalnız dimensionality reduction", "image_url": null},
+        {"key": "D", "text": "Reinforcement learning", "image_url": null}
+      ],
+      "correct": "B"
+    },
+    {
+      "number": 5,
+      "kind": "mc",
+      "prompt": "Train/test bölgüsünün əsas məqsədi nədir?",
+      "text": "Train/test bölgüsünün əsas məqsədi nədir?",
+      "image_url": null,
+      "options": [
+        {"key": "A", "text": "Modelin yaddaşda daha çox yer tutması", "image_url": null},
+        {"key": "B", "text": "Modelin ümilləşməsini (generalization) yoxlamaq", "image_url": null},
+        {"key": "C", "text": "Verilənləri avtomatik təmizləmək", "image_url": null},
+        {"key": "D", "text": "GPU-nu söndürmək", "image_url": null}
+      ],
+      "correct": "B"
+    },
+    {
+      "number": 6,
+      "kind": "mc",
+      "prompt": "scikit-learn-də `fit()` metodu nə edir?",
+      "text": "scikit-learn-də `fit()` metodu nə edir?",
+      "image_url": null,
+      "options": [
+        {"key": "A", "text": "Yalnız vizuallaşdırma çəkir", "image_url": null},
+        {"key": "B", "text": "Modeli öyrənmə məlumatı üzərində öyrədir", "image_url": null},
+        {"key": "C", "text": "Faylı disklə yazır", "image_url": null},
+        {"key": "D", "text": "Verilənləri avtomatik yükləyir", "image_url": null}
+      ],
+      "correct": "B"
+    },
+    {
+      "number": 7,
+      "kind": "mc",
+      "prompt": "CSV faylını pandas ilə oxumaq üçün hansı funksiya istifadə olunur?",
+      "text": "CSV faylını pandas ilə oxumaq üçün hansı funksiya istifadə olunur?",
+      "image_url": null,
+      "options": [
+        {"key": "A", "text": "pd.load_csv()", "image_url": null},
+        {"key": "B", "text": "pd.read_csv()", "image_url": null},
+        {"key": "C", "text": "pd.open_csv()", "image_url": null},
+        {"key": "D", "text": "pd.import_csv()", "image_url": null}
+      ],
+      "correct": "B"
+    },
+    {
+      "number": 8,
+      "kind": "mc",
+      "prompt": "matplotlib-də qrafikin oxları üçün ümumi etiketlər hansı metodlarla verilir?",
+      "text": "matplotlib-də qrafikin oxları üçün ümumi etiketlər hansı metodlarla verilir?",
+      "image_url": null,
+      "options": [
+        {"key": "A", "text": "set_xlabel / set_ylabel", "image_url": null},
+        {"key": "B", "text": "label_x / label_y", "image_url": null},
+        {"key": "C", "text": "axis_names()", "image_url": null},
+        {"key": "D", "text": "rename_axes()", "image_url": null}
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 9,
+      "kind": "mc",
+      "prompt": "Boş dəyərləri (missing values) pandas-da tez-tez hansı metodla aşkar etmək olar?",
+      "text": "Boş dəyərləri (missing values) pandas-da tez-tez hansı metodla aşkar etmək olar?",
+      "image_url": null,
+      "options": [
+        {"key": "A", "text": "df.isna() və ya df.isnull()", "image_url": null},
+        {"key": "B", "text": "df.empty()", "image_url": null},
+        {"key": "C", "text": "df.blank()", "image_url": null},
+        {"key": "D", "text": "df.check_nan()", "image_url": null}
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 10,
+      "kind": "mc",
+      "prompt": "Jupyter Notebook-da xülasə interfeysində hücrəni işə salmaq üçün əsas klaviatura qısayolu hansıdır?",
+      "text": "Jupyter Notebook-da xülasə interfeysində hücrəni işə salmaq üçün əsas klaviatura qısayolu hansıdır?",
+      "image_url": null,
+      "options": [
+        {"key": "A", "text": "Shift + Enter", "image_url": null},
+        {"key": "B", "text": "Ctrl + S", "image_url": null},
+        {"key": "C", "text": "Alt + F4", "image_url": null},
+        {"key": "D", "text": "Tab + Space", "image_url": null}
+      ],
+      "correct": "A"
+    },
+    {
+      "number": 11,
+      "kind": "open",
+      "open_rule": "EXACT_MATCH",
+      "prompt": "NumPy kitabxanasının əsas məqsədini bir cümlə ilə izah edin.",
+      "text": "NumPy kitabxanasının əsas məqsədini bir cümlə ilə izah edin.",
+      "image_url": null,
+      "options": [],
+      "open_answer": "çoxölçülü elmi hesablamalar üçün sürətli massiv əməliyyatları təmin etmək"
+    },
+    {
+      "number": 12,
+      "kind": "open",
+      "open_rule": "UNORDERED_MATCH",
+      "prompt": "Aşağıdakı üç anlayışı vergüllə ayıraraq yazın (sıra önəmli deyil): pandas, NumPy, matplotlib",
+      "text": "Aşağıdakı üç anlayışı vergüllə ayıraraq yazın (sıra önəmli deyil): pandas, NumPy, matplotlib",
+      "image_url": null,
+      "options": [],
+      "open_answer": "pandas, NumPy, matplotlib"
+    },
+    {
+      "number": 13,
+      "kind": "open",
+      "open_rule": "MATCHING",
+      "prompt": "Sütunları sol tərəfdəki rəqəmlərlə uyğunlaşdırın (cavab formatı: 1-a, 2-b, 3-c).",
+      "text": "Sütunları sol tərəfdəki rəqəmlərlə uyğunlaşdırın (cavab formatı: 1-a, 2-b, 3-c).",
+      "image_url": null,
+      "options": [],
+      "matching_left": ["1", "2", "3"],
+      "matching_right": ["a", "b", "c", "d", "e"],
+      "open_answer": "1-a2-b3-c"
+    },
+    {
+      "number": 14,
+      "kind": "situation",
+      "prompt": "Situasiya 1 — İki hissə (mətn cavabı + qaralama):\n(A) Data Science layihəsində train və test dəstlərini ayırmağın iki praktik səbəbini qısa yazın.\n(B) Jupyter-da gördüyünüz nümunəvi pandas kod blokunun axını üçün sadə sxemi qaralama lövhəsində çəkin.",
+      "text": "Situasiya 1 — İki hissə (mətn cavabı + qaralama):\n(A) Data Science layihəsində train və test dəstlərini ayırmağın iki praktik səbəbini qısa yazın.\n(B) Jupyter-da gördüyünüz nümunəvi pandas kod blokunun axını üçün sadə sxemi qaralama lövhəsində çəkin.",
+      "image_url": null,
+      "options": [],
+      "max_multiplier": 1
+    },
+    {
+      "number": 15,
+      "kind": "situation",
+      "prompt": "Situasiya 2 — İki fərqli tapşırıq (bir sual kartında):\n(1) Overfitting anlayışını öz sözlərinizlə izah edin.\n(2) Modelin yoxlanış dəstində (validation) xətası train-dən yüksəkdirsə, müəllimə bildirmək üçün qısa mesaj mətni təklif edin və qaralama ilə vizual qeyd əlavə edin.",
+      "text": "Situasiya 2 — İki fərqli tapşırıq (bir sual kartında):\n(1) Overfitting anlayışını öz sözlərinizlə izah edin.\n(2) Modelin yoxlanış dəstində (validation) xətası train-dən yüksəkdirsə, müəllimə bildirmək üçün qısa mesaj mətni təklif edin və qaralama ilə vizual qeyd əlavə edin.",
+      "image_url": null,
+      "options": [],
+      "max_multiplier": 1
+    }
+  ]
+}
