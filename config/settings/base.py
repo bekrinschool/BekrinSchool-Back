@@ -28,6 +28,10 @@ DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 # Single-tenant: teacher sees all users/groups/payments (no org filter). Set False for multi-tenant.
 SINGLE_TENANT = env.bool('SINGLE_TENANT', default=True)
 
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+CORS_ALLOW_CREDENTIALS = True
+
 raw_hosts = os.getenv('ALLOWED_HOSTS', '')
 if raw_hosts:
     ALLOWED_HOSTS = raw_hosts.split(',')
