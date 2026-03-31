@@ -5,8 +5,10 @@
 [build]
 # Railway Railpack (successor to Nixpacks) — no Dockerfile required
 builder = "RAILPACK"
+buildCommand = "pip install -r requirements.txt"
 
 [deploy]
+startCommand = "gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --threads 3 --timeout 120"
 releaseCommand = "sh -c 'export DJANGO_SETTINGS_MODULE=\"${DJANGO_SETTINGS_MODULE:-config.settings.prod}\" && python manage.py migrate --noinput && python manage.py collectstatic --noinput'"
 restartPolicyType = "ON_FAILURE"
 # HTTP health check: set only on the *web* service in Railway (Settings → Deploy → Healthcheck Path) to /api/health/
