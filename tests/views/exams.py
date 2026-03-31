@@ -2511,7 +2511,7 @@ def _build_blueprint_bank(exam, seed=None):
     return blueprint
 
 
-def _build_blueprint_pdf_json(answer_key, seed=None):
+def _build_blueprint_pdf_json(answer_key, seed=None, grouped_shuffle=True):
     """Build attempt blueprint for PDF/JSON: stable option ids opt_1..opt_n, shuffled display order, correctOptionId.
 
     Question order: MC, then open, then situation — each group shuffled independently (grouped shuffle).
@@ -2524,15 +2524,25 @@ def _build_blueprint_pdf_json(answer_key, seed=None):
         return []
     # Only process dict items to avoid AttributeError on bad data
     questions_raw = [q for q in questions_raw if isinstance(q, dict)]
-    kind_order = {'mc': 0, 'open': 1, 'situation': 2}
-    sorted_q = sorted(questions_raw, key=lambda q: (kind_order.get((q.get('kind') or '').lower(), 99), q.get('number', 0)))
-    mc_q = [q for q in sorted_q if (q.get('kind') or 'mc').lower() == 'mc']
-    open_q = [q for q in sorted_q if (q.get('kind') or '').lower() == 'open']
-    sit_q = [q for q in sorted_q if (q.get('kind') or '').lower() == 'situation']
-    rng.shuffle(mc_q)
-    rng.shuffle(open_q)
-    rng.shuffle(sit_q)
-    ordered_q = mc_q + open_q + sit_q
+    if grouped_shuffle:
+        kind_order = {'mc': 0, 'open': 1, 'situation': 2}
+        sorted_q = sorted(questions_raw, key=lambda q: (kind_order.get((q.get('kind') or '').lower(), 99), q.get('number', 0)))
+        mc_q = [q for q in sorted_q if (q.get('kind') or 'mc').lower() == 'mc']
+        open_q = [q for q in sorted_q if (q.get('kind') or '').lower() == 'open']
+        sit_q = [q for q in sorted_q if (q.get('kind') or '').lower() == 'situation']
+        rng.shuffle(mc_q)
+        rng.shuffle(open_q)
+        rng.shuffle(sit_q)
+        ordered_q = mc_q + open_q + sit_q
+    else:
+        # PDF path: keep original sequential question order for printed key alignment.
+        ordered_q = sorted(
+            questions_raw,
+            key=lambda q: (
+                1 if q.get('number') is None else 0,
+                q.get('number') if q.get('number') is not None else 0,
+            ),
+        )
 
     blueprint = []
     for q in ordered_q:
@@ -2874,7 +2884,11 @@ def student_run_start_view(request, run_id):
                 attempt.attempt_blueprint = _build_blueprint_bank(exam, seed=attempt.pk)
             else:
                 answer_key = exam.answer_key_json if isinstance(exam.answer_key_json, dict) else {}
-                attempt.attempt_blueprint = _build_blueprint_pdf_json(answer_key, seed=attempt.pk)
+                attempt.attempt_blueprint = _build_blueprint_pdf_json(
+                    answer_key,
+                    seed=attempt.pk,
+                    grouped_shuffle=(exam.source_type != 'PDF'),
+                )
             # Save question order and option order for grading accuracy
             question_order = []
             option_order = {}
@@ -3176,7 +3190,11 @@ def _finalize_exam_attempt_submission(
     max_score = Decimal(str(exam.max_score or (100 if is_quiz else 150)))
     blueprint = attempt.attempt_blueprint or []
     if exam.source_type != 'BANK' and not blueprint and exam.answer_key_json and isinstance(exam.answer_key_json, dict):
-        blueprint = _build_blueprint_pdf_json(exam.answer_key_json, seed=attempt.pk)
+        blueprint = _build_blueprint_pdf_json(
+            exam.answer_key_json,
+            seed=attempt.pk,
+            grouped_shuffle=(exam.source_type != 'PDF'),
+        )
     elif exam.source_type == 'BANK' and not blueprint:
         blueprint = _build_blueprint_bank(exam, seed=attempt.pk)
     count_standard, count_situation, total_units = _get_units_from_blueprint(blueprint)
@@ -3190,7 +3208,11 @@ def _finalize_exam_attempt_submission(
     with transaction.atomic():
         ExamAnswer.objects.filter(attempt=attempt).delete()
         if not blueprint and exam.source_type != 'BANK' and (exam.answer_key_json and isinstance(exam.answer_key_json, dict)):
-            blueprint = _build_blueprint_pdf_json(exam.answer_key_json, seed=attempt.pk)
+            blueprint = _build_blueprint_pdf_json(
+                exam.answer_key_json,
+                seed=attempt.pk,
+                grouped_shuffle=(exam.source_type != 'PDF'),
+            )
         if not blueprint and exam.source_type == 'BANK':
             blueprint = _build_blueprint_bank(exam, seed=attempt.pk)
         if exam.source_type != 'BANK' and (blueprint or (exam.answer_key_json and isinstance(exam.answer_key_json, dict))):
