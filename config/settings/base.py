@@ -28,7 +28,9 @@ DEBUG = env('DEBUG', default=False)
 # Single-tenant: teacher sees all users/groups/payments (no org filter). Set False for multi-tenant.
 SINGLE_TENANT = env.bool('SINGLE_TENANT', default=True)
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+raw_hosts = os.getenv('ALLOWED_HOSTS', '')
+if raw_hosts:
+    ALLOWED_HOSTS = raw_hosts.split(',')
 
 # Application definition
 INSTALLED_APPS = [
@@ -259,10 +261,11 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # CSRF Settings
-CSRF_TRUSTED_ORIGINS = env.list(
-    'CSRF_TRUSTED_ORIGINS',
-    default=['http://localhost:3000']
-)
+raw_origins = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+if raw_origins:
+    CSRF_TRUSTED_ORIGINS = raw_origins.split(',')
+else:
+    CSRF_TRUSTED_ORIGINS = []
 
 # Source - https://stackoverflow.com/a/45327676
 # Posted by J.Jai, modified by community. See post 'Timeline' for change history
