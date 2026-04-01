@@ -1671,7 +1671,11 @@ def teacher_run_attempts_view(request, run_id):
         from groups.services import get_active_students_for_group
         memberships = get_active_students_for_group(run.group)
         student_ids_in_group = {m.student_profile.user_id for m in memberships}
-        attempt_by_student = {a.student_id: a for a in attempts}
+        attempt_by_student = {}
+        for a in attempts:
+            # attempts is ordered by -started_at; keep first (latest valid) per student
+            if a.student_id not in attempt_by_student:
+                attempt_by_student[a.student_id] = a
         
         data = []
         for student_id in student_ids_in_group:
@@ -1744,7 +1748,11 @@ def teacher_run_attempts_view(request, run_id):
     elif run.student is None:
         # Multi-student custom run
         student_ids = set(run.run_students.values_list('student_id', flat=True))
-        attempt_by_student = {a.student_id: a for a in attempts}
+        attempt_by_student = {}
+        for a in attempts:
+            # attempts is ordered by -started_at; keep first (latest valid) per student
+            if a.student_id not in attempt_by_student:
+                attempt_by_student[a.student_id] = a
         data = []
         for student_id in student_ids:
             attempt = attempt_by_student.get(student_id)
