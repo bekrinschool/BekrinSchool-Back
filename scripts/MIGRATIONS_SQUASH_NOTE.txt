@@ -1,0 +1,12 @@
+Migrations in this repo were squashed to fresh 0001 (and 0002 where Django split FK deps) per app.
+
+Fresh database:
+  python manage.py migrate
+
+Existing database that already ran the OLD long migration chain:
+  Do not apply this tree blindly — django_migrations will not match. Options:
+  - Drop and recreate the database (dev/staging), then migrate; OR
+  - Stay on the previous branch/migrations until you plan a real migration cutover.
+
+If `makemigrations` ever writes files under .venv\Lib\site-packages\django\contrib\...,
+reinstall Django: pip install --force-reinstall "Django>=5.0,<7"

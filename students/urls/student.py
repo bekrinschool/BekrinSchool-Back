@@ -28,6 +28,8 @@ from tests.views.exams import (
     student_pdf_scribbles_view,
     student_exam_suspend_view,
     student_exam_attempt_sync_view,
+    student_exam_attempt_state_view,
+    student_exam_attempt_draft_answers_view,
 )
 
 app_name = 'student'
@@ -51,8 +53,15 @@ urlpatterns = [
     path('exams/<int:exam_id>/start', student_exam_start_view, name='exam-start'),
     path('exams/<int:exam_id>/submit', student_exam_submit_view, name='exam-submit'),
     path('exams/attempts/<int:attempt_id>/sync', student_exam_attempt_sync_view, name='exam-attempt-sync'),
+    path('exams/attempts/<int:attempt_id>/state', student_exam_attempt_state_view, name='exam-attempt-state'),
+    path('exams/attempts/<int:attempt_id>/draft-answers', student_exam_attempt_draft_answers_view, name='exam-attempt-draft-answers'),
     path('exams/attempts/<int:attempt_id>/canvas', student_exam_canvas_save_view, name='exam-canvas-save'),
     path('exams/attempts/<int:attempt_id>/pdf-scribbles', student_pdf_scribbles_view, name='exam-pdf-scribbles'),
+    path(
+        'exams/attempts/<int:attempt_id>/upsert-scratchpad',
+        student_pdf_scribbles_view,
+        name='exam-upsert-scratchpad',
+    ),
     path('exams/suspend', student_exam_suspend_view, name='exam-suspend'),
     path('exams/<int:exam_id>/attempts/<int:attempt_id>/result', student_exam_result_view, name='exam-result'),
 ]

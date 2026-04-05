@@ -1,18 +1,11 @@
 """
 Answer key JSON validation for PDF/JSON exam sources.
-Exam: exactly 30 questions (22 closed + 5 open + 3 situation).
-Quiz: minimum 1 question, no maximum (any count allowed).
+Exam / quiz: dynamic question counts; minimum 1 question.
 Accepts user format: no, qtype (closed|open|situation), options as strings, correct as index, answer.
 Normalizes to internal: number, kind (mc|open|situation), options as [{key, text}], correct as key, open_answer.
 """
 from typing import Any
 
-# Exam: strict 30 questions (22 closed + 5 open + 3 situation)
-EXAM_TOTAL = 30
-EXAM_CLOSED = 22
-EXAM_OPEN = 5
-EXAM_SITUATION = 3
-# Quiz: no total limit; minimum 1 question
 QUIZ_MIN_QUESTIONS = 1
 
 OPEN_RULES = {
@@ -124,6 +117,7 @@ def validate_and_normalize_answer_key_json(data: Any) -> tuple[bool, list[str], 
 def validate_answer_key_json(data: Any) -> tuple[bool, list[str]]:
     """
     Validate answer key JSON (internal format: number, kind, options as [{key, text}], correct as key).
+    Exam and quiz both allow dynamic question counts (minimum one question).
     Returns (is_valid, list of error messages).
     """
     errors = []
@@ -209,17 +203,10 @@ def validate_answer_key_json(data: Any) -> tuple[bool, list[str]]:
     total = closed + open_count + situation_count
     if total == 0:
         errors.append('At least one question is required')
-    # Exam: exactly 30 questions (22 closed + 5 open + 3 situation)
+    # Exam & quiz: dynamic counts; at least one question (no fixed 30/22/5/3).
     if exam_type == 'exam':
-        if total != EXAM_TOTAL:
-            errors.append(f'Exam must have exactly {EXAM_TOTAL} questions total (got {total})')
-        if closed != EXAM_CLOSED:
-            errors.append(f'Exam must have exactly {EXAM_CLOSED} closed (mc) questions (got {closed})')
-        if open_count != EXAM_OPEN:
-            errors.append(f'Exam must have exactly {EXAM_OPEN} open questions (got {open_count})')
-        if situation_count != EXAM_SITUATION:
-            errors.append(f'Exam must have exactly {EXAM_SITUATION} situation questions (got {situation_count})')
-    # Quiz: minimum 1 question, no maximum
+        if total < QUIZ_MIN_QUESTIONS:
+            errors.append(f'Exam must have at least {QUIZ_MIN_QUESTIONS} question(s) (got {total})')
     elif exam_type == 'quiz':
         if total < QUIZ_MIN_QUESTIONS:
             errors.append(f'Quiz must have at least {QUIZ_MIN_QUESTIONS} question(s) (got {total})')

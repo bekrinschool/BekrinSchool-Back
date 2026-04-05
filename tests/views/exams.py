@@ -59,7 +59,7 @@ from tests.serializers import (
 )
 from tests.evaluate import evaluate_open_single_value
 from tests.answer_key import validate_answer_key_json, validate_and_normalize_answer_key_json
-from tests.json_import_adapter import ensure_json_exam_migrated_to_bank, sync_json_import_to_bank_exam
+from tests.json_import_adapter import ensure_json_exam_migrated_to_bank
 
 
 def _now():
@@ -95,6 +95,95 @@ def _saved_answers_payload_for_attempt(attempt):
         if rec:
             out.append(rec)
     return out
+
+
+def _coerce_student_answers_payload_to_internal_rows(answers_payload):
+    """
+    Accept compact PDF payload: [{ "no": 1, "qtype": "closed|open|situation", "answer": "..." }, ...]
+    and convert to internal rows for draft/submit: questionNumber, selectedOptionKey/Id, textAnswer.
+    If payload is already internal shape (e.g. textAnswer key), return unchanged.
+    """
+    if not isinstance(answers_payload, list) or len(answers_payload) == 0:
+        return answers_payload if isinstance(answers_payload, list) else []
+    sample = answers_payload[0]
+    if not isinstance(sample, dict):
+        return answers_payload
+    if 'answer' not in sample:
+        return answers_payload
+    qtype_raw = sample.get('qtype') or sample.get('qType')
+    if qtype_raw is None:
+        return answers_payload
+    no_present = any(k in sample for k in ('no', 'questionNumber', 'question_number'))
+    if not no_present:
+        return answers_payload
+    out = []
+    for a in answers_payload:
+        if not isinstance(a, dict):
+            continue
+        num = a.get('no')
+        if num is None:
+            num = a.get('questionNumber') or a.get('question_number')
+        qtype = (a.get('qtype') or a.get('qType') or '').strip().lower()
+        ans = a.get('answer')
+        if ans is None:
+            ans = ''
+        ans = str(ans).strip() if isinstance(ans, str) else str(ans)
+        row = {}
+        try:
+            row['questionNumber'] = int(num) if num is not None and str(num).strip().lstrip('-').isdigit() else num
+        except (TypeError, ValueError):
+            row['questionNumber'] = num
+        qid = a.get('questionId') or a.get('question_id')
+        if qid is not None:
+            row['questionId'] = qid
+        if qtype in ('closed', 'mc', 'multiple_choice'):
+            row['selectedOptionKey'] = ans.upper() if ans else None
+            row['selectedOptionId'] = a.get('selectedOptionId') or a.get('selected_option_id')
+            row['textAnswer'] = ''
+        else:
+            row['textAnswer'] = ans
+            row['selectedOptionKey'] = None
+            row['selectedOptionId'] = None
+        out.append(row)
+    return out
+
+
+def _persist_student_attempt_draft_answers(attempt, answers_payload):
+    """
+    Replace in-progress attempt's ExamAnswer rows with draft payload (auto-save / suspend).
+    Same shape as submit/suspend: list of { questionId?, questionNumber?, selectedOptionId?, selectedOptionKey?, textAnswer? }.
+    """
+    if not isinstance(answers_payload, list):
+        return
+    ExamAnswer.objects.filter(attempt=attempt).delete()
+    for a in answers_payload:
+        if not isinstance(a, dict):
+            continue
+        qid = a.get('questionId') or a.get('question_id')
+        qnum = a.get('questionNumber') or a.get('question_number')
+        text_answer = (a.get('textAnswer') or a.get('text_answer') or '').strip() or None
+        selected_option_id = a.get('selectedOptionId') or a.get('selected_option_id')
+        selected_option_key = (a.get('selectedOptionKey') or a.get('selected_option_key') or '').strip() or None
+        q_obj = None
+        if qid is not None:
+            try:
+                q_obj = Question.objects.get(pk=int(qid))
+            except Exception:
+                q_obj = None
+        try:
+            qnum_int = int(qnum) if qnum is not None else None
+        except Exception:
+            qnum_int = None
+        ExamAnswer.objects.create(
+            attempt=attempt,
+            question=q_obj,
+            question_number=qnum_int,
+            selected_option_id=int(selected_option_id) if selected_option_id is not None and str(selected_option_id).strip().isdigit() else None,
+            selected_option_key=selected_option_key,
+            text_answer=text_answer,
+            auto_score=Decimal('0'),
+            requires_manual_check=False,
+        )
 
 
 def _resume_question_index_from_saved(questions_data, saved_rows):
@@ -856,8 +945,8 @@ def teacher_questions_bulk_delete_view(request):
 def _validate_exam_composition(exam):
     """
     Validate question composition rules.
-    Exam: exactly 30 questions (22 closed + 5 open + 3 situation).
-    Quiz: at least 1 question, no maximum.
+    PDF/JSON: delegated to answer_key validation (dynamic counts).
+    BANK: at least one question; no fixed 30/22/5/3.
     Returns (is_valid, error_message).
     """
     # PDF/JSON: validate from answer_key_json
@@ -880,10 +969,8 @@ def _validate_exam_composition(exam):
             situation += 1
     total = closed + open_c + situation
     if exam.type == 'exam':
-        if total != 30:
-            return False, f'İmtahan tam 30 sual olmalıdır (22 qapalı + 5 açıq + 3 situasiya). Hazırkı: {total} sual.'
-        if closed != 22 or open_c != 5 or situation != 3:
-            return False, f'İmtahan tərkibi: 22 qapalı + 5 açıq + 3 situasiya olmalıdır. Hazırkı: {closed} qapalı, {open_c} açıq, {situation} situasiya.'
+        if total < 1:
+            return False, 'İmtahan üçün ən azı 1 sual tələb olunur.'
     elif exam.type == 'quiz':
         if total < 1:
             return False, 'Quiz üçün ən azı 1 sual tələb olunur.'
@@ -929,14 +1016,14 @@ def teacher_exams_view(request):
     if request.method == 'POST':
         data = request.data.copy()
         source_type = (data.get('source_type') or 'BANK').upper()
-        if source_type not in ('BANK', 'PDF', 'JSON'):
-            return Response({'detail': 'source_type must be BANK, PDF, or JSON'}, status=status.HTTP_400_BAD_REQUEST)
+        if source_type not in ('BANK', 'PDF'):
+            return Response({'detail': 'source_type must be BANK or PDF'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # PDF/JSON: require answer_key (answer_key_json or json_import); normalize no/qtype/options/correct index
+        # PDF: require answer_key (answer_key_json or json_import); normalize no/qtype/options/correct index
         answer_key = data.get('answer_key_json') or data.get('json_import')
-        if source_type in ('PDF', 'JSON'):
+        if source_type == 'PDF':
             if not answer_key:
-                return Response({'detail': 'answer_key_json or json_import required for PDF/JSON source'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'detail': 'answer_key_json or json_import required for PDF source'}, status=status.HTTP_400_BAD_REQUEST)
             is_valid, err, normalized = validate_and_normalize_answer_key_json(answer_key)
             if not is_valid:
                 return Response({'detail': err[0] if err else 'Invalid answer key', 'errors': err or []}, status=status.HTTP_400_BAD_REQUEST)
@@ -973,7 +1060,7 @@ def teacher_exams_view(request):
             update_f.append('source_type')
             if not exam.max_score:
                 exam.max_score = 100 if exam.type == 'quiz' else 150
-            if source_type in ('PDF', 'JSON') and answer_key:
+            if source_type == 'PDF' and answer_key:
                 exam.answer_key_json = answer_key
                 update_f.append('answer_key_json')
             exam.save(update_fields=update_f)
@@ -986,17 +1073,6 @@ def teacher_exams_view(request):
                             ExamQuestion.objects.get_or_create(exam=exam, question=q, defaults={'order': idx})
                         except (Question.DoesNotExist, ValueError, TypeError):
                             pass
-            elif source_type == 'JSON' and answer_key:
-                try:
-                    sync_json_import_to_bank_exam(exam, answer_key, request.user)
-                    exam.refresh_from_db()
-                except ValueError as e:
-                    exam.delete()
-                    return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-                except Exception as e:
-                    logger.exception('sync_json_import_to_bank_exam failed')
-                    exam.delete()
-                    return Response({'detail': f'JSON sualları saxlanmadı: {e}'}, status=status.HTTP_400_BAD_REQUEST)
             return Response(ExamSerializer(exam).data, status=status.HTTP_201_CREATED)
         return Response(s.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -2519,10 +2595,48 @@ def _build_blueprint_bank(exam, seed=None):
     return blueprint
 
 
-def _build_blueprint_pdf_json(answer_key, seed=None, grouped_shuffle=True):
-    """Build attempt blueprint for PDF/JSON: stable option ids opt_1..opt_n, shuffled display order, correctOptionId.
+def _pdf_mc_resolve_correct_key_and_opt_id(q_def):
+    """
+    PDF/JSON answer-key MC block: `correct` may be option letter ('A'), 0-based index (0 = first option),
+    or missing. Returns (correct_key_upper_or_none, stable_option_id 'opt_N' or None).
+    Used for blueprint correctOptionId and submission grading (key-only student payloads).
+    """
+    if not isinstance(q_def, dict):
+        return None, None
+    opts = [o for o in (q_def.get('options') or []) if isinstance(o, dict)]
+    if not opts:
+        return None, None
+    cor = q_def.get('correct')
+    idx = None
+    if isinstance(cor, bool):
+        cor = None
+    if isinstance(cor, (int, float)):
+        idx = int(cor)
+    elif isinstance(cor, str) and cor.strip() != '':
+        s = cor.strip()
+        if s.lstrip('-').isdigit():
+            idx = int(s)
+    if idx is not None:
+        if 0 <= idx < len(opts):
+            letter = (opts[idx].get('key') or '').strip().upper()
+            if not letter:
+                letter = chr(ord('A') + idx) if 0 <= idx < 26 else str(idx)
+            return letter, f'opt_{idx + 1}'
+        return None, None
+    if cor is not None:
+        cor_u = str(cor).strip().upper()
+        for i, o in enumerate(opts):
+            if (o.get('key') or '').strip().upper() == cor_u:
+                return cor_u, f'opt_{i + 1}'
+        return cor_u if cor_u else None, None
+    return None, None
 
-    Question order: MC, then open, then situation — each group shuffled independently (grouped shuffle).
+
+def _build_blueprint_pdf_json(answer_key, seed=None, grouped_shuffle=True, shuffle_mc_options=True):
+    """Build attempt blueprint for PDF/JSON: stable option ids opt_1..opt_n, optional shuffled display order.
+
+    PDF exams: pass grouped_shuffle=False and shuffle_mc_options=False so questions and A/B/C… order
+    match the printed answer key (no shuffling). JSON exams keep grouped shuffle + per-question option shuffle.
     """
     rng = _rng_for_attempt(seed)
     if not isinstance(answer_key, dict):
@@ -2560,15 +2674,18 @@ def _build_blueprint_pdf_json(answer_key, seed=None, grouped_shuffle=True):
             opts = list(q.get('options') or [])
             opts = [o for o in opts if isinstance(o, dict)]  # only dict options
             if opts:
-                correct_key = (str(q.get('correct') or '').strip().upper())
+                correct_key_resolved, correct_stable_id = _pdf_mc_resolve_correct_key_and_opt_id(q)
                 # Assign stable id per option (by original order), then shuffle display order
                 opts_with_id = [{'id': f'opt_{i+1}', 'key': (o.get('key') or '').strip().upper(), 'text': o.get('text', '')} for i, o in enumerate(opts)]
                 key_to_id = {o['key'] or o['id']: o['id'] for o in opts_with_id}
-                rng.shuffle(opts_with_id)
+                if shuffle_mc_options:
+                    rng.shuffle(opts_with_id)
                 options_blueprint = [{'id': o['id'], 'text': o['text']} for o in opts_with_id]
-                correctOptionId = key_to_id.get(correct_key)
-                if not correctOptionId and opts_with_id:
-                    correctOptionId = opts_with_id[0]['id']
+                correctOptionId = None
+                if correct_stable_id and any(o['id'] == correct_stable_id for o in opts_with_id):
+                    correctOptionId = correct_stable_id
+                elif correct_key_resolved:
+                    correctOptionId = key_to_id.get(correct_key_resolved)
                 blueprint.append({'questionNumber': num, 'kind': kind, 'options': options_blueprint, 'correctOptionId': correctOptionId})
             else:
                 blueprint.append({'questionNumber': num, 'kind': kind, 'options': [], 'correctOptionId': None})
@@ -2746,6 +2863,15 @@ def _questions_data_from_blueprint(blueprint):
             continue
         qno = item.get('questionNumber') or item.get('questionId')
         kind = item.get('kind', 'mc')
+        kind_l = (kind or 'mc').lower()
+        if kind_l == 'mc':
+            qtype = 'closed'
+        elif kind_l == 'open':
+            qtype = 'open'
+        elif kind_l == 'situation':
+            qtype = 'situation'
+        else:
+            qtype = kind_l
         opts = item.get('options') or []
         opt_rows = []
         for o in opts:
@@ -2763,6 +2889,7 @@ def _questions_data_from_blueprint(blueprint):
             'number': qno,
             'kind': kind,
             'type': kind,
+            'qtype': qtype,
             'mcOptionDisplay': (item.get('mcOptionDisplay') or 'TEXT').upper(),
             'options': opt_rows,
         }
@@ -2896,6 +3023,7 @@ def student_run_start_view(request, run_id):
                     answer_key,
                     seed=attempt.pk,
                     grouped_shuffle=(exam.source_type != 'PDF'),
+                    shuffle_mc_options=(exam.source_type != 'PDF'),
                 )
             # Save question order and option order for grading accuracy
             question_order = []
@@ -2991,6 +3119,7 @@ def student_run_start_view(request, run_id):
             'examId': exam.id,
             'runId': run.id,
             'title': exam.title,
+            'type': exam.type,
             'status': attempt.status,
             'sourceType': exam.source_type,
             'pdfUrl': pdf_url,
@@ -3119,6 +3248,7 @@ def student_exam_start_view(request, exam_id):
         'attemptId': attempt.id,
         'examId': exam.id,
         'title': exam.title,
+        'type': exam.type,
         'status': attempt.status,
         'startedAt': attempt.started_at.isoformat(),
         'expiresAt': attempt.expires_at.isoformat() if attempt.expires_at else None,
@@ -3163,6 +3293,86 @@ def student_exam_attempt_sync_view(request, attempt_id):
     })
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsStudent])
+def student_exam_attempt_state_view(request, attempt_id):
+    """
+    GET /api/student/exams/attempts/{attemptId}/state
+    Current attempt snapshot for PDF exam hydration (resume / refresh) without creating a new attempt.
+    """
+    now = _now()
+    try:
+        attempt = ExamAttempt.objects.select_related('exam', 'exam_run').get(pk=int(attempt_id), student=request.user)
+    except (ExamAttempt.DoesNotExist, TypeError, ValueError):
+        return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+    _ex = attempt.exam
+    if getattr(_ex, 'is_deleted', False) or getattr(_ex, 'status', None) == 'deleted':
+        return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+    if attempt.exam_run_id and not _student_has_run_access(attempt.exam_run, request.user):
+        return Response({'detail': 'You do not have access to this attempt'}, status=status.HTTP_403_FORBIDDEN)
+    if attempt.finished_at is not None or attempt.status == 'SUBMITTED':
+        return Response({
+            'attemptId': attempt.id,
+            'status': attempt.status,
+            'submitted': True,
+            'savedAnswers': [],
+            'scratchpadData': [],
+            'scratchpad_data': [],
+        })
+    global_end = None
+    if attempt.exam_run_id:
+        global_end = attempt.exam_run.end_at
+    else:
+        global_end = _exam_global_end(attempt.exam)
+    expires = attempt.expires_at or global_end
+    _scrib_rows = list(
+        PdfScribble.objects.filter(attempt=attempt).order_by('page_index').values('page_index', 'drawing_data')
+    )
+    _scratchpad_list = [
+        {'pageIndex': s['page_index'], 'drawingData': s['drawing_data'] or {}} for s in _scrib_rows
+    ]
+    return Response({
+        'attemptId': attempt.id,
+        'examId': attempt.exam_id,
+        'runId': attempt.exam_run_id,
+        'status': attempt.status,
+        'submitted': False,
+        'serverNow': now.isoformat(),
+        'expiresAt': expires.isoformat() if expires else None,
+        'sessionRevision': getattr(attempt, 'session_revision', 0),
+        'savedAnswers': _saved_answers_payload_for_attempt(attempt),
+        'scratchpadData': _scratchpad_list,
+        'scratchpad_data': _scratchpad_list,
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsStudent])
+def student_exam_attempt_draft_answers_view(request, attempt_id):
+    """
+    POST /api/student/exams/attempts/{attemptId}/draft-answers
+    Body: { answers: [...] } — optimistic auto-save for PDF bubble sheet (does not suspend run).
+    """
+    try:
+        attempt = ExamAttempt.objects.select_related('exam_run').get(pk=int(attempt_id), student=request.user)
+    except (ExamAttempt.DoesNotExist, TypeError, ValueError):
+        return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+    if attempt.exam_run_id and not _student_has_run_access(attempt.exam_run, request.user):
+        return Response({'detail': 'You do not have access to this attempt'}, status=status.HTTP_403_FORBIDDEN)
+    if attempt.finished_at is not None:
+        return Response({'detail': 'Already submitted'}, status=status.HTTP_400_BAD_REQUEST)
+    answers_payload = _coerce_student_answers_payload_to_internal_rows(
+        request.data.get('answers') or request.data.get('answers_list') or []
+    )
+    try:
+        with transaction.atomic():
+            _persist_student_attempt_draft_answers(attempt, answers_payload)
+    except Exception as e:
+        logger.exception('student_exam_attempt_draft_answers attempt_id=%s user_id=%s: %s', attempt_id, getattr(request.user, 'id', None), e)
+        return Response({'detail': 'Could not save draft'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    return Response({'ok': True, 'attemptId': attempt.id})
+
+
 def _finalize_exam_attempt_submission(
     attempt,
     exam,
@@ -3202,6 +3412,7 @@ def _finalize_exam_attempt_submission(
             exam.answer_key_json,
             seed=attempt.pk,
             grouped_shuffle=(exam.source_type != 'PDF'),
+            shuffle_mc_options=(exam.source_type != 'PDF'),
         )
     elif exam.source_type == 'BANK' and not blueprint:
         blueprint = _build_blueprint_bank(exam, seed=attempt.pk)
@@ -3220,6 +3431,7 @@ def _finalize_exam_attempt_submission(
                 exam.answer_key_json,
                 seed=attempt.pk,
                 grouped_shuffle=(exam.source_type != 'PDF'),
+                shuffle_mc_options=(exam.source_type != 'PDF'),
             )
         if not blueprint and exam.source_type == 'BANK':
             blueprint = _build_blueprint_bank(exam, seed=attempt.pk)
@@ -3246,9 +3458,29 @@ def _finalize_exam_attempt_submission(
                     auto_score = Decimal('0')
                     if kind == 'mc':
                         correct_option_id = item.get('correctOptionId')
+                        match_mcq = False
                         if correct_option_id and selected_id and str(selected_id).strip() == str(correct_option_id).strip():
+                            match_mcq = True
+                        if not match_mcq and selected_key:
+                            ak_q = None
+                            if exam.answer_key_json and isinstance(exam.answer_key_json, dict):
+                                for qx in (exam.answer_key_json.get('questions') or []):
+                                    if not isinstance(qx, dict):
+                                        continue
+                                    try:
+                                        if int(qx.get('number')) == int(num):
+                                            ak_q = qx
+                                            break
+                                    except (TypeError, ValueError):
+                                        if qx.get('number') == num:
+                                            ak_q = qx
+                                            break
+                            ck_res, _oid = _pdf_mc_resolve_correct_key_and_opt_id(ak_q or {})
+                            if ck_res and selected_key == ck_res:
+                                match_mcq = True
+                        if match_mcq:
                             auto_score = pts_per_auto
-                        elif not is_quiz and selected_id:
+                        elif not is_quiz and (selected_id or selected_key):
                             auto_score = max(pts_mcq_wrong, -total_score)
                     elif kind == 'open':
                         ak = exam.answer_key_json or {}
@@ -3389,11 +3621,18 @@ def _finalize_exam_attempt_submission(
         attempt.total_score = total_score
         attempt.status = 'SUBMITTED'
         attempt.is_visible_to_student = False
-        attempt.save(update_fields=['finished_at', 'auto_score', 'total_score', 'status', 'is_visible_to_student'])
+        cheating_update_fields = []
+        if cheating_detected:
+            attempt.is_cheating_detected = True
+            attempt.cheating_detected_at = now
+            cheating_update_fields = ['is_cheating_detected', 'cheating_detected_at']
+        attempt.save(update_fields=['finished_at', 'auto_score', 'total_score', 'status', 'is_visible_to_student', *cheating_update_fields])
         if attempt.exam_run_id:
             run = ExamRun.objects.filter(pk=attempt.exam_run_id).only('id', 'group_id', 'student_id').first()
             run_updates = {}
-            if cheating_detected:
+            # Per-student cheating lives on ExamAttempt. Only set run-level flags for dedicated
+            # single-student runs so group exams are never "locked" for everyone.
+            if cheating_detected and run and run.student_id is not None and run.student_id == attempt.student_id:
                 run_updates['is_cheating_detected'] = True
                 run_updates['cheating_detected_at'] = now
             # IMPORTANT: finishing one student's attempt must not finish the whole group run.
@@ -3459,9 +3698,17 @@ def student_exam_submit_view(request, exam_id):
     if getattr(exam, 'is_deleted', False) or exam.status == 'deleted':
         return Response({'detail': 'Exam not found'}, status=status.HTTP_404_NOT_FOUND)
     attempt_id = request.data.get('attemptId') or request.data.get('attempt_id')
-    answers_payload = request.data.get('answers') or request.data.get('answers_list') or []
+    answers_payload = _coerce_student_answers_payload_to_internal_rows(
+        request.data.get('answers') or request.data.get('answers_list') or []
+    )
     if not attempt_id:
         return Response({'detail': 'attemptId required'}, status=status.HTTP_400_BAD_REQUEST)
+    client_type = request.data.get('type')
+    if client_type is not None and str(client_type).strip() != '':
+        if str(client_type).lower() not in ('quiz', 'exam'):
+            return Response({'detail': 'type must be "quiz" or "exam"'}, status=status.HTTP_400_BAD_REQUEST)
+        if str(client_type).lower() != str(exam.type).lower():
+            return Response({'detail': 'Payload type does not match this test'}, status=status.HTTP_400_BAD_REQUEST)
     try:
         attempt = ExamAttempt.objects.select_related('exam').prefetch_related('exam__exam_questions__question__options').get(
             pk=attempt_id, exam=exam, student=request.user
@@ -3523,41 +3770,13 @@ def student_exam_suspend_view(request):
     if attempt.finished_at is not None:
         return Response({'detail': 'Already submitted'}, status=status.HTTP_400_BAD_REQUEST)
 
-    answers_payload = request.data.get('answers') or []
+    answers_payload = _coerce_student_answers_payload_to_internal_rows(
+        request.data.get('answers') or request.data.get('answers_list') or []
+    )
     canvases_payload = request.data.get('canvases') or []
     now = _now()
     with transaction.atomic():
-        # Final-save current textual/option answers as draft rows.
-        if isinstance(answers_payload, list):
-            ExamAnswer.objects.filter(attempt=attempt).delete()
-            for a in answers_payload:
-                if not isinstance(a, dict):
-                    continue
-                qid = a.get('questionId') or a.get('question_id')
-                qnum = a.get('questionNumber') or a.get('question_number')
-                text_answer = (a.get('textAnswer') or a.get('text_answer') or '').strip() or None
-                selected_option_id = a.get('selectedOptionId') or a.get('selected_option_id')
-                selected_option_key = (a.get('selectedOptionKey') or a.get('selected_option_key') or '').strip() or None
-                q_obj = None
-                if qid is not None:
-                    try:
-                        q_obj = Question.objects.get(pk=int(qid))
-                    except Exception:
-                        q_obj = None
-                try:
-                    qnum_int = int(qnum) if qnum is not None else None
-                except Exception:
-                    qnum_int = None
-                ExamAnswer.objects.create(
-                    attempt=attempt,
-                    question=q_obj,
-                    question_number=qnum_int,
-                    selected_option_id=int(selected_option_id) if selected_option_id is not None and str(selected_option_id).strip().isdigit() else None,
-                    selected_option_key=selected_option_key,
-                    text_answer=text_answer,
-                    auto_score=Decimal('0'),
-                    requires_manual_check=False,
-                )
+        _persist_student_attempt_draft_answers(attempt, answers_payload)
 
         # Final-save canvases (including canvas_json)
         if isinstance(canvases_payload, list):
@@ -3712,13 +3931,33 @@ def student_exam_canvas_save_view(request, attempt_id):
     return Response(_build_canvas_response(canvas, request, include_canvas_json=True), status=status.HTTP_200_OK)
 
 
+def _scratchpad_require_exam_id(request, attempt):
+    """Scratchpad writes must include exam_id matching the attempt (isolates data to exam + student via attempt)."""
+    data = getattr(request, 'data', None) or {}
+    raw = data.get('exam_id') if isinstance(data, dict) else None
+    if raw is None and isinstance(data, dict):
+        raw = data.get('examId')
+    if raw is None:
+        return Response(
+            {'detail': 'exam_id tələb olunur (qaralama yalnız imtahan və şagird cəhdinə bağlıdır)'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    try:
+        if int(raw) != int(attempt.exam_id):
+            return Response({'detail': 'exam_id bu cəhd ilə uyğun gəlmir'}, status=status.HTTP_400_BAD_REQUEST)
+    except (TypeError, ValueError):
+        return Response({'detail': 'exam_id düzgün rəqəm deyil'}, status=status.HTTP_400_BAD_REQUEST)
+    return None
+
+
 # ---------- Student: PDF page scribbles (drawing overlay per page) ----------
 @api_view(['GET', 'POST', 'PUT'])
 @permission_classes([IsAuthenticated, IsStudent])
 def student_pdf_scribbles_view(request, attempt_id):
     """
     GET: list of { pageIndex, drawingData } for the attempt.
-    POST/PUT: Body { pageIndex, drawingData } for one page, or { scribbles: [ { pageIndex, drawingData }, ... ] } for bulk.
+    POST/PUT: Body must include exam_id (or examId) matching the attempt.
+    Single page: { exam_id, pageIndex, drawingData } or bulk { exam_id, scribbles: [...] }.
     """
     try:
         attempt = ExamAttempt.objects.select_related('exam').get(pk=attempt_id, student=request.user)
@@ -3733,6 +3972,9 @@ def student_pdf_scribbles_view(request, attempt_id):
         })
     if attempt.finished_at is not None:
         return Response({'detail': 'Exam already submitted'}, status=status.HTTP_400_BAD_REQUEST)
+    scope_err = _scratchpad_require_exam_id(request, attempt)
+    if scope_err is not None:
+        return scope_err
     bulk = request.data.get('scribbles')
     if isinstance(bulk, list):
         updated = []
@@ -3985,7 +4227,7 @@ def _get_exam_attempts_payload(request, exam, grading_queue_only=False):
                     'runEndAt': run.end_at.isoformat(),
                     'runStatus': run.status,
                     'suspendedAt': run.suspended_at.isoformat() if run.suspended_at else None,
-                    'isCheatingDetected': bool(run.is_cheating_detected),
+                    'isCheatingDetected': bool(run.is_cheating_detected) or bool(getattr(attempt, 'is_cheating_detected', False)),
                     'studentId': attempt.student.id,
                     'studentName': attempt.student.full_name,
                     'status': 'SUBMITTED' if attempt.finished_at else (getattr(attempt, 'status', None) or 'IN_PROGRESS'),
@@ -4047,7 +4289,7 @@ def _get_exam_attempts_payload(request, exam, grading_queue_only=False):
                     'runEndAt': run.end_at.isoformat(),
                     'runStatus': run.status,
                     'suspendedAt': run.suspended_at.isoformat() if run.suspended_at else None,
-                    'isCheatingDetected': bool(run.is_cheating_detected),
+                    'isCheatingDetected': bool(run.is_cheating_detected) or bool(getattr(attempt, 'is_cheating_detected', False)),
                     'studentId': attempt.student.id,
                     'studentName': attempt.student.full_name,
                     'status': 'SUBMITTED' if attempt.finished_at else (getattr(attempt, 'status', None) or 'IN_PROGRESS'),
@@ -4084,7 +4326,9 @@ def _get_exam_attempts_payload(request, exam, grading_queue_only=False):
             'durationMinutes': run.duration_minutes,
             'status': run.status,
             'suspendedAt': run.suspended_at.isoformat() if run.suspended_at else None,
-            'isCheatingDetected': bool(run.is_cheating_detected),
+            'isCheatingDetected': bool(run.is_cheating_detected) or any(
+                bool(a.get('isCheatingDetected')) for a in attempts_data
+            ),
             'attemptCount': run.attempt_count,
             'attempts': attempts_data,
             'summary': {
@@ -4419,7 +4663,10 @@ def teacher_attempt_detail_view(request, attempt_id):
         'studentName': attempt.student.full_name,
         'runId': attempt.exam_run.id if attempt.exam_run else None,
         'runStatus': attempt.exam_run.status if attempt.exam_run else None,
-        'isCheatingDetected': bool(getattr(attempt.exam_run, 'is_cheating_detected', False)) if attempt.exam_run else False,
+        'isCheatingDetected': (
+            bool(getattr(attempt, 'is_cheating_detected', False))
+            or (bool(attempt.exam_run.is_cheating_detected) if attempt.exam_run else False)
+        ),
         'pdfUrl': pdf_url,
         'pdfScribbles': pdf_scribbles,
         'pages': page_urls,
@@ -4998,19 +5245,21 @@ def teacher_attempt_restart_view(request, attempt_id):
         attempt.is_result_published = False
         attempt.is_visible_to_student = True
         attempt.session_revision = new_revision
+        attempt.is_cheating_detected = False
+        attempt.cheating_detected_at = None
         attempt.save(update_fields=[
             'started_at', 'expires_at', 'duration_minutes', 'finished_at', 'status',
             'auto_score', 'manual_score', 'total_score', 'is_checked', 'is_result_published', 'is_visible_to_student',
-            'session_revision',
+            'session_revision', 'is_cheating_detected', 'cheating_detected_at',
         ])
 
         if attempt.exam_run_id:
-            ExamRun.objects.filter(pk=attempt.exam_run_id).update(
-                status='active',
-                suspended_at=None,
-                is_cheating_detected=False,
-                cheating_detected_at=None,
-            )
+            run_updates = {'status': 'active', 'suspended_at': None}
+            er_restart = ExamRun.objects.filter(pk=attempt.exam_run_id).only('student_id').first()
+            if er_restart and er_restart.student_id is not None:
+                run_updates['is_cheating_detected'] = False
+                run_updates['cheating_detected_at'] = None
+            ExamRun.objects.filter(pk=attempt.exam_run_id).update(**run_updates)
 
         ExamStudentAssignment.objects.update_or_create(
             exam=attempt.exam,
@@ -5056,6 +5305,8 @@ def teacher_attempt_continue_view(request, attempt_id):
             attempt.status = 'IN_PROGRESS'
 
         attempt.is_visible_to_student = True
+        attempt.is_cheating_detected = False
+        attempt.cheating_detected_at = None
 
         if er:
             attempt.expires_at = er.end_at
@@ -5066,16 +5317,23 @@ def teacher_attempt_continue_view(request, attempt_id):
             elif not attempt.expires_at or attempt.expires_at < now:
                 attempt.expires_at = now + timedelta(minutes=int(duration_minutes))
 
-        attempt.save(update_fields=['finished_at', 'expires_at', 'status', 'is_visible_to_student'])
+        attempt.save(update_fields=[
+            'finished_at', 'expires_at', 'status', 'is_visible_to_student',
+            'is_cheating_detected', 'cheating_detected_at',
+        ])
 
         if attempt.exam_run_id:
-            ExamRun.objects.filter(pk=attempt.exam_run_id).update(
-                status='active',
-                suspended_at=None,
-                is_cheating_detected=False,
-                cheating_detected_at=None,
-                teacher_unlocked_at=now,
-            )
+            run_updates = {
+                'status': 'active',
+                'suspended_at': None,
+                'teacher_unlocked_at': now,
+            }
+            # Clear run-level cheating only for dedicated single-student runs (never wipe group run flags blindly).
+            er_row = ExamRun.objects.filter(pk=attempt.exam_run_id).only('student_id', 'group_id').first()
+            if er_row and er_row.student_id is not None:
+                run_updates['is_cheating_detected'] = False
+                run_updates['cheating_detected_at'] = None
+            ExamRun.objects.filter(pk=attempt.exam_run_id).update(**run_updates)
 
     return Response({'message': 'Attempt continued', 'attemptId': attempt.id})
 
@@ -5173,7 +5431,7 @@ def teacher_pdfs_view(request):
         serializer = TeacherPDFSerializer(valid_pdfs, many=True, context={'request': request})
         return Response(serializer.data)
     if request.method == 'POST':
-        data = request.data.copy()
+        data = _mutable_question_request_data(request)
         data['teacher'] = request.user.id
         if 'file' not in request.FILES and 'file' not in (request.data or {}):
             return Response({'error': 'file is required'}, status=status.HTTP_400_BAD_REQUEST)

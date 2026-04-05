@@ -1,25 +1,38 @@
+# Bekrin backend — install: pip install -r requirements.txt
+# Production: set DJANGO_SETTINGS_MODULE=config.settings.prod, DATABASE_URL, DJANGO_SECRET_KEY,
+# ALLOWED_HOSTS, REDIS_URL (web + Celery worker). See Procfile / railway.toml.
+
+# --- Core framework ---
 Django>=5.0,<7
-Pillow>=10.0.0
-pdf2image>=1.17.0
-PyMuPDF>=1.23.0
 djangorestframework
 djangorestframework-simplejwt
-psycopg2-binary
-python-dotenv
 django-cors-headers
-drf-spectacular
 django-environ
+python-dotenv
+
+# --- API docs ---
+drf-spectacular
+
+# --- Database (PostgreSQL in prod; SQLite OK for local dev) ---
+psycopg2-binary
+
+# --- Media / PDF exams ---
+Pillow>=10.0.0
+PyMuPDF>=1.23.0
+pdf2image>=1.17.0
+
+# --- Students bulk import (Excel) + credential encryption ---
 openpyxl
 cryptography
 
-# Production (Railway / gunicorn)
+# --- Production WSGI + static files ---
 gunicorn>=22.0
 whitenoise>=6.6
 
-# Redis cache + Celery
+# --- Cache + async tasks (optional locally if REDIS_URL unset: see settings) ---
 django-redis>=5.4
 celery[redis]>=5.3
 
-# Optional S3-compatible media (USE_S3=1)
+# --- Optional S3-compatible storage (USE_S3=1) ---
 django-storages>=1.14
 boto3>=1.34

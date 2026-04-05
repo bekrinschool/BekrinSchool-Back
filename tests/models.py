@@ -591,6 +591,8 @@ class ExamAttempt(models.Model):
         db_index=True,
         help_text='Incremented on teacher hard-restart; student clients poll to leave stale UI.',
     )
+    is_cheating_detected = models.BooleanField(default=False, db_index=True)
+    cheating_detected_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = 'exam_attempts'

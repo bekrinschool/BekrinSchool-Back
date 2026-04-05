@@ -8,6 +8,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from accounts.permissions import IsTeacher
+from core.utils import belongs_to_user_organization
+from groups.student_hard_delete import hard_delete_student_profile
+from students.models import StudentProfile
 
 from tests.models import (
     QuestionTopic,
@@ -15,6 +18,7 @@ from tests.models import (
     Exam,
     TeacherPDF,
 )
+from coding.models import CodingTopic, CodingTask
 from tests.serializers import (
     QuestionTopicSerializer,
     QuestionSerializer,
@@ -294,3 +298,139 @@ def bulk_delete_pdfs_view(request):
     deleted_count = qs.count()
     qs.delete()
     return Response({'deleted': deleted_count, 'message': f'{deleted_count} PDF(s) deleted'})
+
+
+def _normalize_archive_bulk_type(raw: str) -> str:
+    t = (raw or '').strip().lower().replace('-', '_')
+    if t in ('codingtopic', 'coding_topic'):
+        return 'coding_topic'
+    if t in ('codingtask', 'coding_task'):
+        return 'coding_task'
+    if t in ('question_topic', 'questiontopic'):
+        return 'topic'
+    if t in ('user', 'users', 'student', 'students', 'şagird', 'sagird'):
+        return 'student'
+    return t
+
+
+def _archive_bulk_delete_one_row(request, typ: str, pk: int) -> tuple[bool, dict | None]:
+    """Returns (deleted_ok, error_dict_or_none)."""
+    try:
+        if typ == 'exam':
+            qs = Exam.objects.filter(pk=pk, is_archived=True)
+            if not getattr(settings, 'SINGLE_TENANT', True):
+                qs = qs.filter(created_by=request.user)
+            exam = qs.first()
+            if not exam:
+                return False, {'type': typ, 'id': pk, 'detail': 'Tapılmadı və ya arxivdə deyil'}
+            if exam.attempts.exists():
+                return False, {'type': typ, 'id': pk, 'detail': 'Bu imtahanda cəhdlər var — silinmir'}
+            exam.delete()
+            return True, None
+        if typ == 'question':
+            n, _ = Question.objects.filter(pk=pk, is_archived=True).delete()
+            if n:
+                return True, None
+            return False, {'type': typ, 'id': pk, 'detail': 'Tapılmadı və ya arxivdə deyil'}
+        if typ == 'topic':
+            n, _ = QuestionTopic.objects.filter(pk=pk, is_archived=True).delete()
+            if n:
+                return True, None
+            return False, {'type': typ, 'id': pk, 'detail': 'Tapılmadı və ya arxivdə deyil'}
+        if typ == 'pdf':
+            qs = TeacherPDF.objects.filter(pk=pk, is_archived=True)
+            if not getattr(settings, 'SINGLE_TENANT', True):
+                qs = qs.filter(teacher=request.user)
+            n, _ = qs.delete()
+            if n:
+                return True, None
+            return False, {'type': typ, 'id': pk, 'detail': 'Tapılmadı və ya arxivdə deyil'}
+        if typ == 'coding_topic':
+            n, _ = CodingTopic.objects.filter(pk=pk, is_archived=True).delete()
+            if n:
+                return True, None
+            return False, {'type': typ, 'id': pk, 'detail': 'Tapılmadı və ya arxivdə deyil'}
+        if typ == 'coding_task':
+            qs = CodingTask.objects.filter(pk=pk, is_archived=True)
+            if not getattr(settings, 'SINGLE_TENANT', True):
+                qs = qs.filter(created_by=request.user)
+            n, _ = qs.delete()
+            if n:
+                return True, None
+            return False, {'type': typ, 'id': pk, 'detail': 'Tapılmadı və ya arxivdə deyil'}
+        if typ == 'student':
+            try:
+                sp = StudentProfile.objects.select_related('user').get(pk=pk, is_deleted=True)
+            except StudentProfile.DoesNotExist:
+                return False, {'type': typ, 'id': pk, 'detail': 'Arxivdə şagird tapılmadı'}
+            if not sp.user or not belongs_to_user_organization(sp.user, request.user, 'organization'):
+                return False, {'type': typ, 'id': pk, 'detail': 'Giriş qadağandır'}
+            outcome = hard_delete_student_profile(sp)
+            if outcome == 'missing_user':
+                return False, {'type': typ, 'id': pk, 'detail': 'İstifadəçi tapılmadı'}
+            return True, None
+        return False, {'type': typ, 'id': pk, 'detail': 'Naməlum category'}
+    except Exception as ex:
+        return False, {'type': typ, 'id': pk, 'detail': str(ex)}
+
+
+@api_view(['DELETE', 'POST'])
+@permission_classes([IsAuthenticated, IsTeacher])
+def archive_bulk_delete_view(request):
+    """
+    Bulk permanent delete for archived items only.
+    Preferred body: { category: exam|question|topic|pdf|coding_topic|coding_task|student, ids: [1, 2, 3] }
+    Legacy: { items: [ { type, id }, ... ] }
+    """
+    deleted_count = 0
+    errors = []
+
+    category = request.data.get('category') or request.data.get('type')
+    ids = request.data.get('ids')
+    if isinstance(ids, list) and ids and category:
+        cat = _normalize_archive_bulk_type(str(category))
+        for raw_id in ids:
+            try:
+                pk = int(raw_id)
+            except (TypeError, ValueError):
+                errors.append({'id': raw_id, 'detail': 'id rəqəm olmalıdır'})
+                continue
+            ok, err = _archive_bulk_delete_one_row(request, cat, pk)
+            if ok:
+                deleted_count += 1
+            elif err:
+                errors.append(err)
+        return Response({
+            'deleted': deleted_count,
+            'errors': errors,
+            'message': f'{deleted_count} element silindi' + (f'; {len(errors)} xəta' if errors else ''),
+        }, status=status.HTTP_200_OK)
+
+    items = request.data.get('items')
+    if not isinstance(items, list) or not items:
+        return Response(
+            {'detail': 'category + ids və ya items massivi tələb olunur'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    for raw in items:
+        if not isinstance(raw, dict):
+            errors.append({'detail': 'Hər element obyekt olmalıdır', 'item': raw})
+            continue
+        typ = _normalize_archive_bulk_type(str(raw.get('type') or ''))
+        try:
+            pk = int(raw.get('id'))
+        except (TypeError, ValueError):
+            errors.append({'detail': 'id rəqəm olmalıdır', 'type': typ, 'id': raw.get('id')})
+            continue
+        ok, err = _archive_bulk_delete_one_row(request, typ, pk)
+        if ok:
+            deleted_count += 1
+        elif err:
+            errors.append(err)
+
+    return Response({
+        'deleted': deleted_count,
+        'errors': errors,
+        'message': f'{deleted_count} element silindi' + (f'; {len(errors)} xəta' if errors else ''),
+    }, status=status.HTTP_200_OK)

@@ -75,6 +75,7 @@ from tests.views.archive import (
     bulk_delete_exams_view,
     bulk_delete_questions_view,
     bulk_delete_pdfs_view,
+    archive_bulk_delete_view,
 )
 from tests.views.exams import (
     teacher_question_topics_view,
@@ -243,6 +244,7 @@ urlpatterns = [
     path('pdfs/<int:pk>', teacher_pdf_detail_view, name='pdf-detail'),
     path('pdfs/<int:pk>/restore', restore_pdf_view, name='pdf-restore'),
     path('pdfs/<int:pk>/hard-delete', hard_delete_pdf_view, name='pdf-hard-delete'),
+    path('archive/bulk', archive_bulk_delete_view, name='archive-bulk-delete'),
     path('archive/exams/bulk-delete', bulk_delete_exams_view, name='bulk-delete-exams'),
     path('archive/questions/bulk-delete', bulk_delete_questions_view, name='bulk-delete-questions'),
     path('archive/pdfs/bulk-delete', bulk_delete_pdfs_view, name='bulk-delete-pdfs'),

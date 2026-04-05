@@ -27,6 +27,7 @@ from students.serializers import StudentProfileSerializer, StudentProfileUpdateS
 from students.models import ParentProfile, ParentChild
 from students.credentials import generate_credentials
 from core.utils import filter_by_organization, belongs_to_user_organization
+from groups.student_hard_delete import hard_delete_student_profile
 
 User = get_user_model()
 
@@ -303,38 +304,11 @@ def teacher_students_view(request, pk=None):
 
         # Hard delete: remove from groups, delete payments, exam attempts, coding; delete parent if only child
         if request.path.endswith('/hard') or request.path.endswith('/hard/'):
-            user = student.user
-            with transaction.atomic():
-                from tests.models import ExamAttempt
-                from attendance.models import AttendanceRecord
-                has_history = (
-                    ExamAttempt.objects.filter(student=user).exists()
-                    or AttendanceRecord.objects.filter(student_profile=student).exists()
-                )
-                parent_ids = list(
-                    ParentChild.objects.filter(student=user).values_list('parent_id', flat=True)
-                )
-                ParentChild.objects.filter(student=user).delete()
-                for parent_id in parent_ids:
-                    if not ParentChild.objects.filter(parent_id=parent_id).exists():
-                        try:
-                            parent_user = User.objects.get(pk=parent_id, role='parent')
-                            if hasattr(parent_user, 'parent_profile'):
-                                parent_user.parent_profile.delete()
-                            parent_user.delete()
-                        except (User.DoesNotExist, Exception):
-                            pass
-                if has_history:
-                    # Preserve historical audit rows; anonymize instead of physical delete.
-                    user.full_name = "Deleted Student"
-                    user.email = f"deleted-student-{user.id}@deleted.local"
-                    user.is_active = False
-                    user.save(update_fields=['full_name', 'email', 'is_active'])
-                    student.deleted_at = timezone.now()
-                    student.is_deleted = True
-                    student.save(update_fields=['deleted_at', 'is_deleted', 'updated_at'])
-                    return Response({'detail': 'Student anonymized to preserve historical records.'}, status=status.HTTP_200_OK)
-                user.delete()
+            outcome = hard_delete_student_profile(student)
+            if outcome == 'missing_user':
+                return Response({'detail': 'Student user missing'}, status=status.HTTP_400_BAD_REQUEST)
+            if outcome == 'anonymized':
+                return Response({'detail': 'Student anonymized to preserve historical records.'}, status=status.HTTP_200_OK)
             return Response(status=status.HTTP_204_NO_CONTENT)
         # Soft delete
         from django.utils import timezone
